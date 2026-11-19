@@ -4,9 +4,9 @@ const S = { explica: true, modo: 'teoria', mod: 1, ex: null, tab: 'arquivos', re
 try { S.feitos = new Set(JSON.parse(localStorage.getItem('oficina-github-feitos') || '[]')); } catch (e) { }
 const salvar = () => { try { localStorage.setItem('oficina-github-feitos', JSON.stringify([...S.feitos])); } catch (e) { } };
 S.worlds = {}; S.lastEx = {}; S.confirmReset = false;
-try { const p = JSON.parse(localStorage.getItem('oficina-github-ui') || '{}'); if (p.calc) S.calc = p.calc; if (p.m7) S.m7 = p.m7; if (p.lastEx) S.lastEx = p.lastEx; if (typeof p.explica === 'boolean') S.explica = p.explica; } catch (e) { }
+try { const p = JSON.parse(localStorage.getItem('oficina-github-ui') || '{}'); if (p.calc) S.calc = p.calc; if (p.m7) S.m7 = p.m7; if (p.lastEx) S.lastEx = p.lastEx; if (typeof p.explica === 'boolean') S.explica = p.explica; if (p.slideMod) S.slideMod = p.slideMod; S.paginaInteira = !!p.paginaInteira; } catch (e) { }
 const KEY = 'oficina-github-ex-';
-function persistUI() { try { localStorage.setItem('oficina-github-ui', JSON.stringify({ calc: S.calc, m7: S.m7, lastEx: S.lastEx, explica: S.explica })); } catch (e) { } }
+function persistUI() { try { localStorage.setItem('oficina-github-ui', JSON.stringify({ calc: S.calc, m7: S.m7, lastEx: S.lastEx, explica: S.explica, slideMod: S.slideMod, paginaInteira: !!S.paginaInteira })); } catch (e) { } }
 function persist() {
   if (!S.ex || !W) return; const ex = curEx(); if (!ex) return;
   const s = JSON.stringify({ v: 2, titulo: ex.titulo, W: Object.assign({}, W, { flags: [...W.flags] }), term: S.term.slice(-300), hist: S.hist.slice(0, 50), extra: Object.fromEntries(Object.entries(ex).filter(([k]) => k.startsWith('_'))) });
@@ -32,20 +32,53 @@ function render() {
   const total = EXERCICIOS.length + CENARIOS.length, feitos = EXERCICIOS.filter(e => S.feitos.has(e.id)).length + CENARIOS.filter(c => S.feitos.has(c.id)).length;
   $('#progTxt').textContent = feitos + ' de ' + total + ' práticas'; $('#progBar').style.width = (100 * feitos / total) + '%';
   if (S.modo === 'teoria') renderTeoria(); else if (S.mod === 7) renderM7(); else renderPratica();
-  const h = S.modo === 'teoria' ? 'teoria-' + S.mod : S.mod === 7 ? 'pratica-7' : 'pratica-' + (S.ex || '').replace('.', '-');
-  if (location.hash.slice(1) !== h) history.replaceState(null, '', '#' + h);
+  atualizaHash();
 }
+function hashAtual() { return S.modo === 'teoria' ? 'teoria-' + S.mod + (!S.paginaInteira && S.slideMod && S.slideMod[S.mod] ? '-' + (S.slideMod[S.mod] + 1) : '') : S.mod === 7 ? 'pratica-7' : 'pratica-' + (S.ex || '').replace('.', '-'); }
+function atualizaHash() { const h = hashAtual(); if (location.hash.slice(1) !== h) history.replaceState(null, '', '#' + h); }
 
+function slidesDe(html) {
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  const slides = []; let cur = { titulo: 'Visão geral', nodes: [] };
+  [...tmp.childNodes].forEach(n => {
+    if (n.nodeType === 1 && n.tagName === 'H3') { if (cur.nodes.some(x => x.nodeType === 1 || (x.textContent || '').trim())) slides.push(cur); cur = { titulo: n.textContent, nodes: [] }; }
+    else cur.nodes.push(n);
+  });
+  if (cur.nodes.some(x => x.nodeType === 1 || (x.textContent || '').trim())) slides.push(cur);
+  return slides.map(s => ({ titulo: s.titulo, html: s.nodes.map(n => n.nodeType === 1 ? n.outerHTML : (n.nodeType === 3 ? esc(n.textContent) : '')).join('') }));
+}
 function renderTeoria() {
-  if (S.mod === 8) { $('#main').innerHTML = `<article class="teoria"><div class="kick">Referência</div><h2>Glossário</h2>${TEORIA[8]}<div class="irpratica"><button class="btn" data-act="mod" data-arg="1">Voltar ao Módulo 1</button></div></article>`; window.scrollTo(0, 0); return; }
   if (S.mod === 0) S.mod = 1;
-  const m = MODULOS.find(x => x.n === S.mod) || MODULOS[0];
-  const n = exsDo(m.n).length;
-  $('#main').innerHTML = `<article class="teoria"><div class="kick">Módulo ${m.n} de 7</div><h2>${m.titulo}</h2><p class="small">${m.sub}</p>${TEORIA[m.n]}
-  <div class="irpratica"><button class="btn pri" data-act="praticar" data-arg="${m.n}">${m.n === 7 ? 'Praticar: calculadora e cenários' : 'Praticar: ' + n + ' exercícios'} →</button>${m.n < 7 ? `<button class="btn" data-act="mod" data-arg="${m.n + 1}">Próximo módulo</button>` : ''}</div></article>`;
+  const glos = S.mod === 8;
+  const m = glos ? { n: 8, titulo: 'Glossário', sub: 'Os termos da trilha em ordem alfabética', cor: '#8c959f' } : (MODULOS.find(x => x.n === S.mod) || MODULOS[0]);
+  if (S.paginaInteira) {
+    $('#main').innerHTML = `<article class="teoria"><div class="kick">${glos ? 'Referência' : 'Módulo ' + m.n + ' de 7'} · <button class="lnk" data-act="slides">ver em etapas</button></div><h2>${m.titulo}</h2><p class="small">${m.sub}</p>${TEORIA[m.n]}${fimTeoria(m)}</article>`;
+    window.scrollTo(0, 0); return;
+  }
+  const sl = slidesDe(TEORIA[m.n]); S.slides = sl;
+  if (sl[0] && sl[0].titulo === 'Visão geral') { sl[0].titulo = m.titulo; sl[0].html = `<p class="small" style="margin-top:-6px">${m.sub}</p>` + sl[0].html; }
+  S.slideMod = S.slideMod || {}; let k = Math.min(S.slideMod[m.n] || 0, sl.length - 1); S.slideMod[m.n] = k;
+  const s = sl[k], ultimo = k === sl.length - 1;
+  $('#main').innerHTML = `<div class="deck">
+  <div class="deck-top"><div><div class="kick">${glos ? 'Referência' : 'Módulo ' + m.n + ' de 7'} · ${m.titulo}</div><div class="etapa">Etapa ${k + 1} de ${sl.length}</div></div>
+  <div class="deck-ctl"><label class="small" for="sumario">Ir para</label><select id="sumario" data-act="sumario">${sl.map((x, i) => `<option value="${i}" ${i === k ? 'selected' : ''}>${i + 1}. ${esc(x.titulo)}</option>`).join('')}</select><button class="lnk" data-act="pagina">página inteira</button></div></div>
+  <div class="trilho" aria-hidden="true">${sl.map((x, i) => `<button tabindex="-1" data-act="ir" data-arg="${i}" class="${i < k ? 'feito' : i === k ? 'atual' : ''}" title="${esc(x.titulo)}"></button>`).join('')}</div>
+  <article class="teoria slide" id="slide" style="border-top:4px solid ${m.cor}"><h2>${esc(s.titulo)}</h2>${s.html}${ultimo ? fimTeoria(m) : ''}</article>
+  <nav class="deck-nav" aria-label="Etapas"><button class="btn" data-act="prev" ${k === 0 ? 'disabled' : ''}>← Anterior</button><span class="small">${k + 1} / ${sl.length}</span>${ultimo ? (glos ? `<button class="btn pri" data-act="mod" data-arg="1">Voltar ao Módulo 1</button>` : `<button class="btn pri" data-act="praticar" data-arg="${m.n}">${m.n === 7 ? 'Praticar' : 'Praticar'} →</button>`) : `<button class="btn pri" data-act="next">Próximo →</button>`}</nav></div>`;
+  const el = $('#slide'); let x0 = null, y0 = null;
+  el.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  el.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null; if (Math.abs(dx) > 70 && Math.abs(dy) < 50 && !e.target.closest('.diag,table,pre,.saida')) irSlide(k + (dx < 0 ? 1 : -1)); });
   window.scrollTo(0, 0);
 }
-
+function fimTeoria(m) {
+  if (m.n === 8) return '';
+  const n = exsDo(m.n).length;
+  return `<div class="irpratica"><button class="btn pri" data-act="praticar" data-arg="${m.n}">${m.n === 7 ? 'Praticar: calculadora e cenários' : 'Praticar: ' + n + ' exercícios'} →</button>${m.n < 7 ? `<button class="btn" data-act="mod" data-arg="${m.n + 1}">Próximo módulo</button>` : ''}</div>`;
+}
+function irSlide(k) {
+  if (!S.slides) return; k = Math.max(0, Math.min(S.slides.length - 1, k));
+  S.slideMod[S.mod] = k; persistUI(); renderTeoria(); atualizaHash();
+}
 /* ---------- prática ---------- */
 function abrirEx(id, manter, reiniciar) {
   S.ex = id; const ex = curEx(); S.dica = 0; S.sol = false; S.viewFile = null; S.viewRemote = null; S.confirmReset = false;
@@ -302,6 +335,11 @@ document.addEventListener('click', e => {
     case 'mod': S.mod = +g; if (S.modo === 'pratica' && S.mod !== 7) { const l = S.mod === 0 ? 'lab' : S.lastEx[S.mod]; if (l) abrirEx(l, true); else S.ex = null; } render(); break;
     case 'praticar': S.modo = 'pratica'; S.mod = +g; if (S.mod !== 7) { const l = S.lastEx[S.mod]; if (l && (!S.ex || curEx()?.mod !== S.mod)) abrirEx(l, true); else if (curEx()?.mod !== S.mod) S.ex = null; } render(); break;
     case 'ex': abrirEx(g); render(); break;
+    case 'next': irSlide((S.slideMod[S.mod] || 0) + 1); break;
+    case 'prev': irSlide((S.slideMod[S.mod] || 0) - 1); break;
+    case 'ir': irSlide(+g); break;
+    case 'pagina': S.paginaInteira = true; persistUI(); renderTeoria(); atualizaHash(); break;
+    case 'slides': S.paginaInteira = false; persistUI(); renderTeoria(); atualizaHash(); break;
     case 'dica': S.dica++; update(); break;
     case 'sol': S.sol = !S.sol; update(); break;
     case 'reset': S.confirmReset = true; update(); break;
@@ -338,6 +376,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('change', e => {
   const t = e.target;
+  if (t.dataset.act === 'sumario') { irSlide(+t.value); return; }
   if (t.dataset.act === 'vis') { webSet(S.repo, 'visibility', t.value); update(); toast('Visibilidade alterada'); }
   if (t.dataset.calc) { S.calc[t.dataset.calc] = t.type === 'checkbox' ? t.checked : t.value; persistUI(); renderM7(); }
 });
@@ -345,11 +384,12 @@ $('#bTeoria').onclick = () => { S.modo = 'teoria'; if (S.mod === 0) S.mod = 1; r
 $('#bPratica').onclick = () => { S.modo = 'pratica'; if (S.mod === 8) S.mod = 1; if (S.mod !== 7) { const cur = curEx(); if (!cur || cur.mod !== S.mod) { const l = S.mod === 0 ? 'lab' : S.lastEx[S.mod]; if (l) abrirEx(l, true); else S.ex = null; } } render(); };
 function rota() {
   const h = location.hash.slice(1); let m;
-  if ((m = h.match(/^teoria-(\d)$/))) { S.modo = 'teoria'; S.mod = +m[1]; }
+  if ((m = h.match(/^teoria-(\d)(?:-(\d+))?$/))) { S.modo = 'teoria'; S.mod = +m[1]; S.slideMod = S.slideMod || {}; if (m[2]) S.slideMod[S.mod] = +m[2] - 1; }
   else if (h === 'pratica-7') { S.modo = 'pratica'; S.mod = 7; }
   else if (h === 'pratica-lab') { S.modo = 'pratica'; S.mod = 0; S.ex = 'lab'; abrirEx('lab', true); }
   else if ((m = h.match(/^pratica-(\d)-(\d)$/))) { S.modo = 'pratica'; S.mod = +m[1]; const id = m[1] + '.' + m[2]; if (EXERCICIOS.some(e => e.id === id)) { S.ex = id; abrirEx(id, true); } }
   render();
 }
-window.addEventListener('hashchange', () => { const want = location.hash.slice(1); const cur = S.modo === 'teoria' ? 'teoria-' + S.mod : S.mod === 7 ? 'pratica-7' : 'pratica-' + (S.ex || '').replace('.', '-'); if (want !== cur) rota(); });
+window.addEventListener('hashchange', () => { if (location.hash.slice(1) !== hashAtual()) rota(); });
+document.addEventListener('keydown', e => { if (S.modo !== 'teoria' || S.paginaInteira || /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return; if (e.key === 'ArrowRight') irSlide((S.slideMod[S.mod] || 0) + 1); if (e.key === 'ArrowLeft') irSlide((S.slideMod[S.mod] || 0) - 1); });
 base(); rota();

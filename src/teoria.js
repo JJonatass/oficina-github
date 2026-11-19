@@ -11,10 +11,10 @@ const MODULOS = [
 
 /* ---------- pequenos componentes ---------- */
 const objetivos = itens => `<div class="objetivos"><b>Neste módulo você vai aprender</b><ul>${itens.map(i => `<li>${i}</li>`).join('')}</ul></div>`;
-const resumo = itens => `<div class="resumo"><b>Resumo do módulo</b><ul>${itens.map(i => `<li>${i}</li>`).join('')}</ul></div>`;
+const resumo = itens => `<h3>Resumo do módulo</h3><div class="resumo"><ul>${itens.map(i => `<li>${i}</li>`).join('')}</ul></div>`;
 const quiz = qs => `<h3>Teste rápido</h3><p class="small">Pense na resposta antes de tocar para conferir.</p><div class="quiz">${qs.map(([p, r]) => `<details><summary>${p}</summary><p>${r}</p></details>`).join('')}</div>`;
 const saida = (titulo, linhas) => `<div class="saida"><div class="saida-t">${titulo}</div>${linhas.map(([l, n]) => `<div class="sl"><code>${l || '&nbsp;'}</code>${n ? `<span>${n}</span>` : ''}</div>`).join('')}</div>`;
-const erros = lista => `<table class="erros"><tr><th>Mensagem ou situação</th><th>O que significa e o que fazer</th></tr>${lista.map(([m, f]) => `<tr><td><code>${m}</code></td><td>${f}</td></tr>`).join('')}</table>`;
+const erros = lista => `<h3>Erros comuns e como resolver</h3><table class="erros"><tr><th>Mensagem ou situação</th><th>O que significa e o que fazer</th></tr>${lista.map(([m, f]) => `<tr><td><code>${m}</code></td><td>${f}</td></tr>`).join('')}</table>`;
 const analogia = t => `<div class="analogia"><b>Analogia</b>${t}</div>`;
 
 const DIAG_AREAS = `<figure class="diag"><svg viewBox="0 0 640 170" role="img" aria-label="As quatro áreas: pasta de trabalho, staging, repositório local e GitHub">
