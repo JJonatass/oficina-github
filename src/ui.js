@@ -59,9 +59,10 @@ function renderTeoria() {
   if (sl[0] && sl[0].titulo === 'Visão geral') { sl[0].titulo = m.titulo; sl[0].html = `<p class="small" style="margin-top:-6px">${m.sub}</p>` + sl[0].html; }
   S.slideMod = S.slideMod || {}; let k = Math.min(S.slideMod[m.n] || 0, sl.length - 1); S.slideMod[m.n] = k;
   const s = sl[k], ultimo = k === sl.length - 1;
-  $('#main').innerHTML = `<div class="deck">
+  document.body.classList.toggle('foco', !!S.foco);
+  $('#main').innerHTML = `<div class="deck${S.foco ? ' foco' : ''}">
   <div class="deck-top"><div><div class="kick">${glos ? 'Referência' : 'Módulo ' + m.n + ' de 7'} · ${m.titulo}</div><div class="etapa">Etapa ${k + 1} de ${sl.length}</div></div>
-  <div class="deck-ctl"><label class="small" for="sumario">Ir para</label><select id="sumario" data-act="sumario">${sl.map((x, i) => `<option value="${i}" ${i === k ? 'selected' : ''}>${i + 1}. ${esc(x.titulo)}</option>`).join('')}</select><button class="lnk" data-act="pagina">página inteira</button></div></div>
+  <div class="deck-ctl"><label class="small" for="sumario">Ir para</label><select id="sumario" data-act="sumario">${sl.map((x, i) => `<option value="${i}" ${i === k ? 'selected' : ''}>${i + 1}. ${esc(x.titulo)}</option>`).join('')}</select><button class="lnk" data-act="pagina">página inteira</button><button class="btn sm expandir" data-act="foco" aria-pressed="${!!S.foco}" title="${S.foco ? 'Sair da tela inteira (Esc)' : 'Expandir em tela inteira'}">${S.foco ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3v6H3M15 3v6h6M9 21v-6H3M15 21v-6h6"/></svg>Sair' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6"/></svg>Tela inteira'}</button></div></div>
   <div class="trilho" aria-hidden="true">${sl.map((x, i) => `<button tabindex="-1" data-act="ir" data-arg="${i}" class="${i < k ? 'feito' : i === k ? 'atual' : ''}" title="${esc(x.titulo)}"></button>`).join('')}</div>
   <article class="teoria slide" id="slide" style="border-top:4px solid ${m.cor}"><h2>${esc(s.titulo)}</h2>${s.html}${ultimo ? fimTeoria(m) : ''}</article>
   <nav class="deck-nav" aria-label="Etapas"><button class="btn" data-act="prev" ${k === 0 ? 'disabled' : ''}>← Anterior</button><span class="small">${k + 1} / ${sl.length}</span>${ultimo ? (glos ? `<button class="btn pri" data-act="mod" data-arg="1">Voltar ao Módulo 1</button>` : `<button class="btn pri" data-act="praticar" data-arg="${m.n}">${m.n === 7 ? 'Praticar' : 'Praticar'} →</button>`) : `<button class="btn pri" data-act="next">Próximo →</button>`}</nav></div>`;
@@ -333,12 +334,13 @@ document.addEventListener('click', e => {
   const msg = m => { if (m) toast(m); update(); };
   switch (a) {
     case 'mod': S.mod = +g; if (S.modo === 'pratica' && S.mod !== 7) { const l = S.mod === 0 ? 'lab' : S.lastEx[S.mod]; if (l) abrirEx(l, true); else S.ex = null; } render(); break;
-    case 'praticar': S.modo = 'pratica'; S.mod = +g; if (S.mod !== 7) { const l = S.lastEx[S.mod]; if (l && (!S.ex || curEx()?.mod !== S.mod)) abrirEx(l, true); else if (curEx()?.mod !== S.mod) S.ex = null; } render(); break;
+    case 'praticar': if (S.foco) setFoco(false); S.modo = 'pratica'; S.mod = +g; if (S.mod !== 7) { const l = S.lastEx[S.mod]; if (l && (!S.ex || curEx()?.mod !== S.mod)) abrirEx(l, true); else if (curEx()?.mod !== S.mod) S.ex = null; } render(); break;
     case 'ex': abrirEx(g); render(); break;
     case 'next': irSlide((S.slideMod[S.mod] || 0) + 1); break;
     case 'prev': irSlide((S.slideMod[S.mod] || 0) - 1); break;
     case 'ir': irSlide(+g); break;
-    case 'pagina': S.paginaInteira = true; persistUI(); renderTeoria(); atualizaHash(); break;
+    case 'foco': setFoco(!S.foco); break;
+    case 'pagina': setFoco(false); S.paginaInteira = true; persistUI(); renderTeoria(); atualizaHash(); break;
     case 'slides': S.paginaInteira = false; persistUI(); renderTeoria(); atualizaHash(); break;
     case 'dica': S.dica++; update(); break;
     case 'sol': S.sol = !S.sol; update(); break;
@@ -381,7 +383,7 @@ document.addEventListener('change', e => {
   if (t.dataset.calc) { S.calc[t.dataset.calc] = t.type === 'checkbox' ? t.checked : t.value; persistUI(); renderM7(); }
 });
 $('#bTeoria').onclick = () => { S.modo = 'teoria'; if (S.mod === 0) S.mod = 1; render(); };
-$('#bPratica').onclick = () => { S.modo = 'pratica'; if (S.mod === 8) S.mod = 1; if (S.mod !== 7) { const cur = curEx(); if (!cur || cur.mod !== S.mod) { const l = S.mod === 0 ? 'lab' : S.lastEx[S.mod]; if (l) abrirEx(l, true); else S.ex = null; } } render(); };
+$('#bPratica').onclick = () => { if (S.foco) setFoco(false); S.modo = 'pratica'; if (S.mod === 8) S.mod = 1; if (S.mod !== 7) { const cur = curEx(); if (!cur || cur.mod !== S.mod) { const l = S.mod === 0 ? 'lab' : S.lastEx[S.mod]; if (l) abrirEx(l, true); else S.ex = null; } } render(); };
 function rota() {
   const h = location.hash.slice(1); let m;
   if ((m = h.match(/^teoria-(\d)(?:-(\d+))?$/))) { S.modo = 'teoria'; S.mod = +m[1]; S.slideMod = S.slideMod || {}; if (m[2]) S.slideMod[S.mod] = +m[2] - 1; }
@@ -392,6 +394,18 @@ function rota() {
 }
 window.addEventListener('hashchange', () => { if (location.hash.slice(1) !== hashAtual()) rota(); });
 document.addEventListener('keydown', e => { if (S.modo !== 'teoria' || S.paginaInteira || /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return; if (e.key === 'ArrowRight') irSlide((S.slideMod[S.mod] || 0) + 1); if (e.key === 'ArrowLeft') irSlide((S.slideMod[S.mod] || 0) - 1); });
+/* ---------- tela inteira dos cards ---------- */
+function setFoco(on) {
+  S.foco = on; document.body.classList.toggle('foco', on);
+  try {
+    if (on && !document.fullscreenElement && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => { });
+    if (!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => { });
+  } catch (e) { }
+  if (S.modo === 'teoria') renderTeoria();
+}
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && S.foco) setFoco(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.foco) setFoco(false); });
+
 /* ---------- tema claro/escuro ---------- */
 const ICONES = { auto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>', claro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>', escuro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>' };
 const NOMES = { auto: 'Automático', claro: 'Claro', escuro: 'Escuro' };

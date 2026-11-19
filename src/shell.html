@@ -65,6 +65,17 @@ table.cmp td:nth-child(2){white-space:nowrap;font-variant-numeric:tabular-nums}
 .etapa{font-size:20px;font-weight:700;letter-spacing:-.01em}
 .deck-ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .deck-ctl select{border:1px solid var(--line);border-radius:6px;padding:4px 8px;background:var(--surface);max-width:260px}
+.expandir{display:inline-flex;align-items:center;gap:6px}.expandir svg{width:15px;height:15px}
+body.foco header.top{display:none}
+.deck.foco{position:fixed;inset:0;z-index:60;background:var(--bg);max-width:none;margin:0;padding:16px clamp(16px,4vw,48px) 0;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.deck.foco .deck-top,.deck.foco .trilho,.deck.foco .deck-nav{width:100%;max-width:1100px;margin:0 auto}
+.deck.foco .slide{width:100%;max-width:1100px;margin:0 auto;flex:1;font-size:18px;padding:36px 48px}
+.deck.foco .slide > h2{font-size:32px}
+.deck.foco .slide p,.deck.foco .slide li{max-width:80ch}
+.deck.foco .slide .small{font-size:15px}
+.deck.foco .slide table,.deck.foco .card,.deck.foco .sl,.deck.foco .free,.deck.foco .alerta,.deck.foco .fluxo,.deck.foco table.erros{font-size:16px}
+.deck.foco .slide pre{font-size:15px}
+@media (max-width:600px){.deck.foco .slide{padding:20px 18px;font-size:16px}.deck.foco .slide > h2{font-size:24px}}
 .lnk{border:0;background:none;color:var(--accent);padding:0;font-size:13px;text-decoration:underline;cursor:pointer}
 .trilho{display:flex;gap:4px}
 .trilho button{flex:1;height:6px;border:0;border-radius:3px;background:var(--line);padding:0;cursor:pointer}
