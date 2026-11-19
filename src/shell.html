@@ -30,7 +30,9 @@ header.top{position:sticky;top:0;z-index:20;background:var(--surface);border-bot
 .modo{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .modo button{border:0;background:transparent;padding:6px 16px;font-weight:600;color:var(--muted)}
 .modo button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
-.prog{margin-left:auto;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.tema{margin-left:auto;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tema svg{width:16px;height:16px}
+.prog{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
 .prog .trk{width:120px;height:6px;background:var(--soft);border-radius:3px;overflow:hidden}
 .prog .trk i{display:block;height:100%;background:var(--commit)}
 nav.mods{display:flex;gap:6px;padding:0 16px 10px;max-width:1400px;margin:0 auto;overflow-x:auto}
@@ -226,6 +228,7 @@ dl.glossario{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;fon
   <div class="bar">
     <div class="brand"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="5" r="2.6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="19" r="2.6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="9" r="2.6" fill="none" stroke="#1a7f37" stroke-width="2"/><path d="M6 7.6v8.8M18 11.6c0 4-5 3.4-10.5 5.6" fill="none" stroke="currentColor" stroke-width="2"/></svg>Oficina GitHub</div>
     <div class="modo" role="group" aria-label="Parte"><button id="bTeoria" aria-pressed="true">Teoria</button><button id="bPratica" aria-pressed="false">Prática</button></div>
+    <button class="tema" id="bTema" type="button" aria-label="Tema"></button>
     <div class="prog"><span id="progTxt">0 de 0 exercícios</span><span class="trk"><i id="progBar" style="width:0"></i></span></div>
   </div>
   <nav class="mods" id="mods" aria-label="Módulos"></nav>
